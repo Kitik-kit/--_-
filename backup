@@ -1,0 +1,269 @@
+-- процедура на увеличение одного параметра если другой равен ..
+create procedure upd1(
+@god int)
+as
+update Книги set Количество_страниц = Количество_страниц +100
+Where Год_публикации = @god 
+go  
+
+select * from Книги
+
+exec upd1'1990'
+--представление в с определенными значениями
+create view inf2 as
+select а.Имя, а.Фамилия, к.Название
+from Автор а, Книги к
+Where  а.id_av=к.id_av and (к.Год_публикации = 1990 or к.Год_публикации = 1995)
+select * from inf2
+
+--представление со значениями в промеждутке
+create view inf6 as
+select а.Имя, а.Фамилия, к.Название
+from Автор а, Книги к
+Where  а.id_av=к.id_av and (к.Год_публикации >= 1990 and к.Год_публикации <= 1995)
+select * from inf6
+
+--оператор обновления sql
+update Книги
+set Количество_страниц = Количество_страниц *6
+Where Год_публикации = 1990
+
+-- вывод только одного участника
+create view aaa as
+select а.Фамилия, к.Название, а.id_av, к.Количество_страниц
+From Автор а, Книги к
+Where а.id_av = к.id_av and а.id_av = 3
+
+select *from aaa
+create database BD2
+Alter Database BD2
+COLLATE Cyrillic_General_CI_Ai
+GO
+use BD2
+
+--СОЗДАНИЕ ТАБЛИЦ
+create table Клиент(
+id_kl int PRIMARY KEY IDENTITY(1,1) NOT NULL,
+Фамилия varchar(30) NOT NULL,
+Имя varchar(30) NOT NULL,
+Отчество varchar(30) NOT NULL,
+"Дата рождения" date NOT NULL,
+Телефон char(12) UNIQUE NOT NULL,
+--СОЗДАНИЕ ЧЕКОВ ДЛЯ ТАБЛИЦЫ
+constraint FName_ck1 check (Имя like '[А-Я]%' Collate Cyrillic_General_BIN),
+constraint SName_ck1 check (Фамилия like '[А-Я]%' Collate Cyrillic_General_BIN),
+constraint MName_ck1 check (Отчество like '[А-Я]%' Collate Cyrillic_General_BIN),
+constraint Phone_ck1 check (Телефон like '[8][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]')
+)
+
+--СОЗДАЕМ ВНЕШНИЕ КЛЮЧИ ДЛЯ СВЯЗЕЙ ТАБЛИЦ
+Alter table Записи_на_услуги
+ADD Constraint klient_fk FOREIGN KEY (id_kl) REFERENCES Клиент (id_kl) on delete cascade on update cascade
+
+----- дефолтное значение
+create table Цена1(
+Название varchar(30) not null,
+Цена int default  600 not null)
+
+-- копирование данных в бд BD4 из бд college
+   SELECT *
+   INTO [BD4].[dbo].[zxc]
+   FROM  [college].[dbo].[Zachet];
+
+
+--процедура на удаление максимального и минимального значения
+CREATE PROCEDURE DeleteMaxValue1
+AS
+BEGIN
+    DECLARE @MaxValue INT;
+	DECLARE @MinValue INT;
+
+    -- Получаем максимальное значение из столбца ПМ03
+    SELECT @MaxValue = MAX([ПМ03])
+    FROM Zachet;
+    
+    -- Удаляем строки с максимальным значением
+    DELETE FROM Zachet
+    WHERE [ПМ03] = @MaxValue;
+
+	 SELECT @MinValue = MIN([ПМ03])
+    FROM Zachet;
+
+	DELETE FROM Zachet
+    WHERE [ПМ03] = @MinValue;
+END;
+
+exec DeleteMaxValue1
+
+
+
+--СОЗДАНИЕ ПРОЦЕДУРЫ 1 ДЛЯ ДОБАВЛЕНИЯ ЗПИСЕЙ В ТАБЛИЦУ КЛИЕНТЫ
+CREATE PROCEDURE klienttb
+(@FName varchar(30),
+@SName varchar(30),
+@MName varchar(30),
+@data date,
+@phone char(12)
+)
+AS
+INSERT INTO Клиент (Фамилия, Имя, Отчество, [Дата рождения], Телефон)
+values (@FName, @SName, @MName, @data, @phone)
+go
+-- ИСПОЛЬЗОВАНИЕ ПРОЦЕДУРЫ
+exec klienttb 'Титов', 'Игоревна', 'Сергеевна', '20.10.2002', '89042505407'
+
+--СОЗДАНИЕ ПРОДЕДУРЫ НА ОБНОВЛЕНИЕ ДАННЫХ1
+CREATE PROCEDURE update_kl
+(@ph char(12),
+@newph char(12))
+as
+update Клиент set Телефон = @newph
+where Телефон = @ph
+go
+
+--вызов процедуры по замене номера телефона
+-- сначала старый указываем потом новый
+exec update_kl '89042505654', '89999999995' 
+
+--создаем процедуру на обновление стоимости по айди услуги 2
+CREATE PROCEDURE update_us
+(@id_us int,
+@price money)
+as
+update Услуги set Стоимость = @price
+Where  id_usl = @id_us
+go
+--выполнение процедуры
+exec update_us 11, 6500
+
+--Создание процедуры на удаление записи на услугу по айди записи 1
+CREATE PROCEDURE delete_zap
+(@id_zap int)
+as
+delete from Записи_на_услуги
+where id_zp = @id_zap
+go
+--выполнение процедуры на удаление записи
+exec delete_zap 6
+
+--Создание процедуры на удаление услуги по айди и по стоимости 3
+CREATE PROCEDURE delete_usl
+(@naim varchar(30),
+@price money)
+as
+delete from Услуги
+Where Наименование = "Наименование" and  Стоимость = @price
+go
+--выполнение процедуры на удаление
+exec delete_usl 'Тайский массаж', 1700
+
+--Создание процедуры на поиск даты и время записи по айди клиента
+CREATE PROCEDURE find_usl
+(@id_kl int)
+as
+SELECT  Дата, Время, Статус_подтвр
+FROM Записи_на_услуги
+where id_kl = @id_kl
+go
+--выполнение процедуры на поиск
+exec find_usl 3
+
+--2 представление на просмотр фио и даты работы 8го сотрудника
+Create view cotr_zap as
+select с.Фамилия, с.Имя, с.Должность, с.Телефон, з.Время, з.Дата
+from Сотрудники с, Записи_на_услуги з
+Where з.id_sot = с.id_sot and с.id_sot = 8
+go
+-- проверка представления 
+select * from cotr_zap
+go
+
+--4 представление показывает дату записи клиентов малдше 2003 года
+Create view kli_dr_zap as
+select к.Фамилия, к.Имя, к.[Дата рождения], з.Дата, з.Статус_подтвр
+from  Клиент к, Записи_на_услуги з
+where з.id_kl = к.id_kl and к.[Дата рождения] > '07.09.2003'
+go 
+--проверка представления
+select * from kli_dr_zap
+go
+
+--2 считает кол-во клиентов за месяц
+Create view kl_m as
+select count (з.id_kl) as [Кол-во клиентов за месяц]
+from Записи_на_услуги з
+where з.Дата >= '01.06.2024' and з.Дата <= '30.06.2024'
+go
+--проверка представления
+select * from kl_m
+
+
+--4 считаем кол-во дней до записи
+Create view day_zap as
+select к.Фамилия, к.Телефон, з.Дата, з.Статус_подтвр,
+DATEDIFF(day, з.Дата, getdate()) as [Дней до записи через тире]
+from  Клиент к, Записи_на_услуги з
+where з.id_kl = к.id_kl
+go
+
+--ГРУППОВЫЕ ПРЕДСТАВЛЕНИЯ
+--1 показывает клиентов и их кол-во записей
+Create view KL_USL as
+select к.Фамилия, к.Телефон, count(з.id_zp) as [Колличество записей]
+from [Клиент] к, [Записи_на_услуги] з
+where з.id_kl = к.id_kl
+Group by к.Фамилия, к.Телефон
+go
+
+
+-- 3 представление показывает среднюю стоимость по типу услуги
+Create view TIP_PRICE as
+select у.Тип_услуги, avg(у.Стоимость) as [Средняя стоимость]
+from [Услуги] у
+Group by у.Тип_услуги
+go
+--ИНДЕКСЫ
+create Index PriceUsl_index on Услуги(Стоимость) --стоимость в услугах
+--информация по индексам
+sp_helpindex Услуги 
+go
+
+-- СОЗДАНИЕ ПОЛЬЗОВАТЕЛЕЙ
+--создание учётных записей
+CREATE LOGIN PUPSIK_1 WITH PASSWORD = 'P@ssw0rd'
+--создание пользователей
+CREATE USER PUPSIK1 FOR LOGIN PUPSIK_1
+
+-- СОЗДАННИЕ РОЛЕЙ
+CREATE Role Manager_Pups--	ЭТА РОЛЬ ПРЕДНАЗНАЧАЕТСЯ ДЛЯ СОТРУДНИКОВ 
+sp_addrolemember Manager_Pups, PUPSIK1
+sp_addrolemember Manager_Pups, PUPSIK2
+CREATE Role Manager_Pups_2 --ЭТА РОЛЬ ПРЕДНАЗНАЧЕНА ДЛЯ КЛИЕНТОВ
+sp_addrolemember Manager_Pups_2, PUPSIK3
+sp_addrolemember Manager_Pups_2, PUPSIK4
+
+-- ПРАВА ДОСТУПА
+ GRANT ALL PRIVILEGES TO PUPSIK5 WITH GRANT OPTION --администаторишка
+ --правильность выданных прав
+  sp_helprotect Null, PUPSIK5
+  --права таблица можно вставить название представления
+  -- можно втаваить пользователя вместо менаджера
+   GRANT SELECT, UPDATE, INSERT, DELETE
+ ON Клиент to Manager_Pups
+ -- права на процедуры
+ GRANT  EXEC
+ ON update_us to Manager_Pups--процедуры
+
+  -----РАЗРАБОТКА СТРАТЕГИИ РЕЗЕРВНОГО КОПИРОВАНИЯ
+ -- ПОЛНОЕ РЕЗЕРВНОЕ КОПИРОВАНИЕ
+ BACKUP DATABASE SPABD1 TO GR31_07_data
+ --РЕЗЕРВНОЕ КОПИРОВАНИЕ (ЖУРНАЛ ТРАНЗАКЦИЙ)
+  BACKUP LOG SPABD1 TO GR31_07_log
+  --ДИФФЕРЕНЦИРОВАННОЕ КОПИРОВАНИЕ
+   BACKUP DATABASE SPABD1 TO GR31_07_data WITH differential, init
+--- восстановление
+Restore database (название бд) from (устройстов) With norecovery, replace
+
+Restore log (название бд) from (устройстов) With norecovery, file = 1
+Restore log (название бд) from (устройстов) With norecovery, file = 2
+Restore log (название бд) from (устройстов) With recovery, file = 3
